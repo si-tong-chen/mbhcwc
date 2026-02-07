@@ -48,6 +48,17 @@ git push -u origin main
    - Output Directory: `build`
 5. 点击 Deploy，获取 Production URL
 
+## 4.1 GitHub Pages 一键部署（已配置）
+本仓库已内置 GitHub Actions：`.github/workflows/deploy-pages.yml`  
+每次 `push` 到 `main` 会自动构建并发布到 GitHub Pages。
+
+### 启用步骤
+1. 进入 GitHub 仓库 `Settings -> Pages`
+2. `Source` 选择 `GitHub Actions`
+3. 推送一次 `main`（或在 `Actions` 页面手动运行 `Deploy to GitHub Pages`）
+4. 发布地址通常为：
+   - `https://<你的GitHub用户名>.github.io/<仓库名>/`
+
 ## 5. 审查交付信息
 把以下信息发送给审查方：
 1. GitHub 仓库地址（代码审查）
