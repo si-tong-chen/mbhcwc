@@ -16,6 +16,14 @@ const PromoServiceDetail = () => {
 
   if (!category || !service) return <Navigate to="/promo" replace />;
 
+  const audience = Array.isArray(service.audience) ? service.audience : [];
+  const process = Array.isArray(service.process) ? service.process : [];
+  const priceFactors = Array.isArray(service.priceFactors) ? service.priceFactors : [];
+  const capabilities = Array.isArray(service.capabilities) ? service.capabilities : [];
+  const certifications = Array.isArray(service.certifications) ? service.certifications : [];
+  const faq = Array.isArray(service.faq) ? service.faq : [];
+  const contactPhone = service?.contact?.phone || '010-53608360';
+
   const onChange = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const onSubmit = async (event) => {
@@ -76,7 +84,7 @@ const PromoServiceDetail = () => {
             <p className="mt-2 text-[#6B7280]">{service.subtitle}</p>
             <p className="mt-4 training-paragraph max-w-4xl">{service.summary}</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <a href={`tel:${service.contact.phone}`} className="training-primary-btn">电话咨询</a>
+              <a href={`tel:${contactPhone}`} className="training-primary-btn">电话咨询</a>
             </div>
           </section>
 
@@ -84,17 +92,19 @@ const PromoServiceDetail = () => {
             <article className="rounded-2xl border border-[#F3D5DC] bg-white/95 p-6">
               <h2 className="training-section-title">适用对象</h2>
               <ul className="mt-4 space-y-2">
-                {service.audience.map((item) => (
+                {audience.map((item) => (
                   <li key={item} className="training-list-item">{item}</li>
                 ))}
+                {audience.length === 0 ? <li className="training-list-item">暂无内容</li> : null}
               </ul>
             </article>
             <article className="rounded-2xl border border-[#F3D5DC] bg-white/95 p-6">
               <h2 className="training-section-title">服务内容与流程</h2>
               <ol className="mt-4 space-y-2">
-                {service.process.map((item) => (
+                {process.map((item) => (
                   <li key={item} className="training-list-item">{item}</li>
                 ))}
+                {process.length === 0 ? <li className="training-list-item">暂无内容</li> : null}
               </ol>
             </article>
           </section>
@@ -104,12 +114,13 @@ const PromoServiceDetail = () => {
             <p className="mt-4 text-lg font-semibold text-[#1F2937]">{service.priceRange}</p>
             <p className="mt-2 text-sm text-[#6B7280]">交付周期：{service.deliveryCycle}</p>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-              {service.priceFactors.map((item) => (
+              {priceFactors.map((item) => (
                 <div key={item} className="training-info-pill">
                   <span className="training-pill-label">影响因素</span>
                   <span>{item}</span>
                 </div>
               ))}
+              {priceFactors.length === 0 ? <div className="training-info-pill"><span>暂无价格影响因素说明</span></div> : null}
             </div>
           </section>
 
@@ -117,17 +128,19 @@ const PromoServiceDetail = () => {
             <article className="rounded-2xl border border-[#F3D5DC] bg-white/95 p-6">
               <h2 className="training-section-title">设施与能力</h2>
               <ul className="mt-4 space-y-2">
-                {service.capabilities.map((item) => (
+                {capabilities.map((item) => (
                   <li key={item} className="training-list-item">{item}</li>
                 ))}
+                {capabilities.length === 0 ? <li className="training-list-item">暂无内容</li> : null}
               </ul>
             </article>
             <article className="rounded-2xl border border-[#F3D5DC] bg-white/95 p-6">
               <h2 className="training-section-title">资质与标准</h2>
               <ul className="mt-4 space-y-2">
-                {service.certifications.map((item) => (
+                {certifications.map((item) => (
                   <li key={item} className="training-list-item">{item}</li>
                 ))}
+                {certifications.length === 0 ? <li className="training-list-item">暂无内容</li> : null}
               </ul>
             </article>
           </section>
@@ -146,12 +159,13 @@ const PromoServiceDetail = () => {
           <section className="mt-6 rounded-2xl border border-[#F3D5DC] bg-white/95 p-6">
             <h2 className="training-section-title">常见问题</h2>
             <div className="mt-4 space-y-3">
-              {service.faq.map((item) => (
+              {faq.map((item) => (
                 <article key={item.q} className="rounded-xl border border-[#F3D5DC] bg-[#FFF8FA] p-4">
                   <h3 className="text-base font-semibold text-[#1F2937]">{item.q}</h3>
                   <p className="mt-2 text-sm text-[#4B5563] leading-6">{item.a}</p>
                 </article>
               ))}
+              {faq.length === 0 ? <article className="rounded-xl border border-[#F3D5DC] bg-[#FFF8FA] p-4 text-sm text-[#6B7280]">暂无常见问题</article> : null}
             </div>
           </section>
 
@@ -194,7 +208,7 @@ const PromoServiceDetail = () => {
               ) : null}
 
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-[#6B7280]">咨询电话：{service.contact.phone}</p>
+                <p className="text-sm text-[#6B7280]">咨询电话：{contactPhone}</p>
                 <button
                   type="submit"
                   disabled={submitting}
@@ -209,7 +223,7 @@ const PromoServiceDetail = () => {
       </main>
 
       <div className="training-mobile-cta">
-        <a href={`tel:${service.contact.phone}`}>电话咨询</a>
+        <a href={`tel:${contactPhone}`}>电话咨询</a>
         <a href="#promo-inquiry-anchor">提交咨询</a>
       </div>
 

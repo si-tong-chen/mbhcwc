@@ -12,6 +12,10 @@ const HealthLectureDetail = () => {
   if (!lecture) return <Navigate to="/lectures" replace />;
 
   const isPast = new Date(lecture.dateTime) < new Date();
+  const contentBlocks = Array.isArray(lecture.content)
+    ? lecture.content
+    : String(lecture.content || '').split('\n');
+  const normalizedContent = contentBlocks.map((item) => String(item || '').trim()).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFF7F9_0%,#FFF1F4_100%)]">
@@ -43,8 +47,8 @@ const HealthLectureDetail = () => {
             </div>
 
             <div className="mt-8 space-y-5 text-[17px] leading-8 text-gray-700">
-              {lecture.content.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
+              {normalizedContent.map((paragraph, index) => (
+                <p key={`${index}-${paragraph.slice(0, 20)}`} className="whitespace-pre-line">{paragraph}</p>
               ))}
             </div>
 

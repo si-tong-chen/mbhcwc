@@ -3,16 +3,22 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
-import { healthLectures } from '../data/healthLectures';
+import { healthLecturesUpcoming, healthLecturesReplay } from '../data/healthLectures';
 
 const PAST_PAGE_SIZE = 4;
 
 const HealthLectureList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const now = new Date();
-  const sorted = [...healthLectures].sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
-  const upcoming = sorted.filter((item) => new Date(item.dateTime) >= now);
-  const past = sorted.filter((item) => new Date(item.dateTime) < now);
+  const upcoming = [...healthLecturesUpcoming].sort((a, b) => {
+    const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+    if (bySort !== 0) return bySort;
+    return new Date(a.dateTime) - new Date(b.dateTime);
+  });
+  const past = [...healthLecturesReplay].sort((a, b) => {
+    const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+    if (bySort !== 0) return bySort;
+    return new Date(b.dateTime) - new Date(a.dateTime);
+  });
   const totalPastPages = Math.max(1, Math.ceil(past.length / PAST_PAGE_SIZE));
   const requestedPastPage = Number(searchParams.get('pastPage') || '1');
   const currentPastPage = Number.isNaN(requestedPastPage)

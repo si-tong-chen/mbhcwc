@@ -1,8 +1,10 @@
-import maternalChild from '../images/儿童健康检查.png';
-import maternalParenting from '../images/科学育儿指导.png';
-import maternalTraining from '../images/专业育儿培训.png';
-import maternalMother from '../images/母亲身心健康.png';
-import maternalScreening from '../images/健康筛查干预.png';
+import maternalChild from '../images/mother_kids/儿童健康检查.png';
+import maternalParenting from '../images/mother_kids/科学育儿指导.png';
+import maternalTraining from '../images/mother_kids/专业育儿培训.png';
+import maternalMother from '../images/mother_kids/母亲身心健康.png';
+import maternalScreening from '../images/mother_kids/健康筛查干预.png';
+import maternalNewborn from '../images/mother_kids/新生儿与婴儿健康.png';
+import { resolveContentModule } from './runtimeContent';
 
 const baseTopics = [
   {
@@ -23,7 +25,7 @@ const baseTopics = [
     slug: 'newborn-infant-health',
     title: '新生儿与婴儿健康',
     positioning: '0-1 岁医学常识与家庭护理知识',
-    image: maternalChild,
+    image: maternalNewborn,
     subcategories: [
       { slug: 'newborn-care-guidance', title: '新生儿护理指导' },
       { slug: 'jaundice-management', title: '黄疸管理' },
@@ -128,7 +130,18 @@ const withArticles = baseTopics.map((topic) => ({
   })
 }));
 
-export const maternalTopics = withArticles;
+const pickPublishedArticles = (topics = []) =>
+  topics.map((topic) => ({
+    ...topic,
+    subcategories: (Array.isArray(topic.subcategories) ? topic.subcategories : []).map((sub) => ({
+      ...sub,
+      articles: (Array.isArray(sub.articles) ? sub.articles : [])
+        .filter((article) => (article?.status || 'published') === 'published')
+        .sort((a, b) => Number(a?.sort_order || 0) - Number(b?.sort_order || 0))
+    }))
+  }));
+
+export const maternalTopics = pickPublishedArticles(resolveContentModule('maternalTopics', withArticles));
 
 export const getMaternalTopicBySlug = (topicSlug) =>
   maternalTopics.find((topic) => topic.slug === topicSlug);

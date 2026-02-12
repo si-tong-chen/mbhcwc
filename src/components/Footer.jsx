@@ -72,7 +72,6 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-[#9A9AA3] text-sm"></div>
             <div className="text-[#9A9AA3] text-sm mt-4 md:mt-0">
-              <p>网站标识码：1234567890 | ICP备案号：京ICP备12345678号</p>
               <p>© 2024 国际宫健康管理协会 版权所有</p>
             </div>
           </div>

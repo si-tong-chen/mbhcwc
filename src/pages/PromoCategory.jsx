@@ -9,6 +9,7 @@ const PromoCategory = () => {
   const { categorySlug } = useParams();
   const category = getPromoCategoryBySlug(categorySlug);
   const services = getPromoServicesByCategory(categorySlug);
+  const categoryHighlights = Array.isArray(category?.highlights) ? category.highlights : [];
 
   const [audienceFilter, setAudienceFilter] = useState('全部对象');
   const [regionFilter, setRegionFilter] = useState('全部地区');
@@ -56,7 +57,7 @@ const PromoCategory = () => {
             <h1 className="mt-3 text-3xl font-bold text-[#1F2937]">{category.name}</h1>
             <p className="mt-3 text-[#4B5563] leading-7">{category.positioning}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {category.highlights.map((item) => (
+              {categoryHighlights.map((item) => (
                 <span key={item} className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">{item}</span>
               ))}
             </div>
@@ -122,6 +123,11 @@ const PromoCategory = () => {
                 </article>
               ))}
             </div>
+            {filteredServices.length === 0 ? (
+              <div className="mt-6 rounded-xl border border-dashed border-[#E5C0C8] bg-[#FFF8FA] p-6 text-sm text-[#6B7280]">
+                当前筛选条件下暂无服务，请调整筛选条件后再试。
+              </div>
+            ) : null}
           </section>
 
           <section className="mt-6 rounded-2xl border border-[#F3D5DC] bg-white/95 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

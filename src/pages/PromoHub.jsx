@@ -5,14 +5,6 @@ import Header from '../components/Header';
 import Navigation from '../components/Navigation';
 import { promoCategories, promoServices } from '../data/promoServices';
 
-const coreCapabilities = [
-  '与世界顶级科研机构开展合作',
-  '实验中心分布欧洲多个重点城市',
-  '细胞制备与检测实验室面积达20000平米',
-  '库容量达700万份',
-  '采用国际GMP标准实验体系'
-];
-
 const PromoHub = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFF7F9_0%,#FFF1F4_100%)]">
@@ -32,22 +24,10 @@ const PromoHub = () => {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href="tel:01053608360" className="training-primary-btn">电话咨询</a>
-              <Link to="/promo/reproductive-medicine" className="training-secondary-btn">查看生育医学项目</Link>
             </div>
           </section>
 
           <section className="mt-10 md:mt-14">
-            <h2 className="text-2xl font-semibold text-[#1F2937]">核心能力摘要</h2>
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {coreCapabilities.map((item) => (
-                <article key={item} className="rounded-xl bg-white border border-[#F3D5DC] px-4 py-3 text-sm text-[#4B5563]">
-                  {item}
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-12 md:mt-16">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-[#1F2937]">服务板块</h2>
               <span className="text-sm text-[#6B7280]">{promoServices.length} 个服务项</span>
@@ -75,6 +55,11 @@ const PromoHub = () => {
                 );
               })}
             </div>
+            {promoCategories.length === 0 ? (
+              <div className="mt-6 rounded-xl border border-dashed border-[#E5C0C8] bg-[#FFF8FA] p-6 text-sm text-[#6B7280]">
+                项目推广内容建设中
+              </div>
+            ) : null}
           </section>
         </div>
       </main>

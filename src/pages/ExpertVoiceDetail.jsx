@@ -29,7 +29,11 @@ const ExpertVoiceDetail = () => {
 
             <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
               <aside className="rounded-2xl border border-[#E5C0C8]/60 bg-[#FFF9FB] overflow-hidden">
-                <img src={expert.image} alt={expert.name} className="w-full h-72 object-cover" />
+                {expert.image ? (
+                  <img src={expert.image} alt={expert.name} className="w-full h-72 object-cover" />
+                ) : (
+                  <div className="flex h-72 w-full items-center justify-center bg-[#FFF2F6] text-sm text-[#9CA3AF]">暂无照片</div>
+                )}
                 <div className="p-5">
                   <h1 className="text-2xl font-semibold text-gray-900">{expert.name}</h1>
                   <p className="mt-2 text-sm text-[#194F92]">{expert.title}</p>

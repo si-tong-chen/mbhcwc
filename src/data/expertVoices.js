@@ -4,8 +4,9 @@ import portraitElderly01 from '../images/portrait_elderly_01.jpg';
 import portraitAsian04 from '../images/portrait_asian_04.png';
 import doctorFemale01 from '../images/doctor_female_01.png';
 import doctorFemale02 from '../images/doctor_female_02.jpg';
+import { resolveContentModule } from './runtimeContent';
 
-export const expertVoices = [
+const fallbackExpertVoices = [
   {
     slug: 'chai-songyan',
     name: '柴松岩',
@@ -103,5 +104,30 @@ export const expertVoices = [
     ]
   }
 ];
+
+const normalizeExpert = (item) => {
+  const safeItem = item || {};
+  const name = (safeItem.name || safeItem.title || '未命名专家').toString();
+  const topics = Array.isArray(safeItem.topics)
+    ? safeItem.topics.filter(Boolean)
+    : [];
+  const insights = Array.isArray(safeItem.insights)
+    ? safeItem.insights.filter(Boolean)
+    : [];
+
+  return {
+    ...safeItem,
+    name,
+    title: (safeItem.title || '专家观点').toString(),
+    institution: (safeItem.institution || '').toString(),
+    quote: (safeItem.quote || safeItem.intro || '').toString(),
+    intro: (safeItem.intro || '').toString(),
+    image: (safeItem.image || '').toString(),
+    topics,
+    insights
+  };
+};
+
+export const expertVoices = resolveContentModule('expertVoices', fallbackExpertVoices).map(normalizeExpert);
 
 export const getExpertVoiceBySlug = (slug) => expertVoices.find((item) => item.slug === slug);

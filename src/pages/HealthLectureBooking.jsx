@@ -3,17 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
-import { healthLectures } from '../data/healthLectures';
+import { healthLecturesUpcoming } from '../data/healthLectures';
 
 const HealthLectureBooking = () => {
   const [searchParams] = useSearchParams();
   const preferredLecture = searchParams.get('lecture') || '';
   const [submitted, setSubmitted] = useState(false);
-  const now = new Date();
-
   const upcomingLectures = useMemo(
-    () => healthLectures.filter((item) => new Date(item.dateTime) >= now).sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime)),
-    [now]
+    () => [...healthLecturesUpcoming].sort((a, b) => {
+      const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+      if (bySort !== 0) return bySort;
+      return new Date(a.dateTime) - new Date(b.dateTime);
+    }),
+    []
   );
 
   const handleSubmit = (event) => {

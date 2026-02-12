@@ -41,11 +41,17 @@ const ExpertVoicesList = () => {
                   className="group rounded-2xl border border-[#E5C0C8]/60 bg-white overflow-hidden shadow-sm hover:shadow-md transition"
                 >
                   <div className="h-48 overflow-hidden bg-[#FDF2F5]">
-                    <img
-                      src={expert.image}
-                      alt={expert.name}
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-300"
-                    />
+                    {expert.image ? (
+                      <img
+                        src={expert.image}
+                        alt={expert.name}
+                        className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-300"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm text-[#9CA3AF]">
+                        暂无照片
+                      </div>
+                    )}
                   </div>
                   <div className="p-5">
                     <h2 className="text-xl font-semibold text-gray-900">

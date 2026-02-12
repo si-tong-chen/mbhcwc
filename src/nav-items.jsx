@@ -27,6 +27,7 @@ import SearchResults from "./pages/SearchResults.jsx";
 import AssociationIntro from "./pages/AssociationIntro.jsx";
 import WorkstationGallery from "./pages/WorkstationGallery.jsx";
 import TopicVideos from "./pages/TopicVideos.jsx";
+import AdminApp from "./pages/AdminApp.jsx";
 
 /**
  * Central place for defining the navigation items. Used for navigation components and routing.
@@ -43,6 +44,12 @@ export const navItems = [
     to: "/news",
     icon: <HomeIcon className="h-4 w-4" />,
     page: <FocusNewsList />,
+  },
+  {
+    title: "Admin",
+    to: "/admin/*",
+    icon: <HomeIcon className="h-4 w-4" />,
+    page: <AdminApp />,
   },
   {
     title: "SearchResults",

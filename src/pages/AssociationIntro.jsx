@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
+import { associationTeamStructure } from '../data/associationTeamStructure';
 
 const sectionTabs = [
   { id: 'association-overview', label: '协会简介' },
@@ -10,17 +11,6 @@ const sectionTabs = [
   { id: 'organization-structure', label: '组织机构' },
   { id: 'mission-vision', label: '使命远景' },
   { id: 'key-work', label: '主要工作' }
-];
-
-const teamMembers = [
-  { title: '会长', count: 1 },
-  { title: '常务副会长兼秘书长', count: 1 },
-  { title: '副会长', count: 1 },
-  { title: '副秘书长', count: 1 },
-  { title: '兼职副秘书长', count: 4 },
-  { title: '办公室', count: 1 },
-  { title: '培训部', count: 1 },
-  { title: '服务部', count: 1 }
 ];
 
 const organizationItems = [
@@ -124,20 +114,40 @@ const AssociationIntro = () => {
       return (
         <section>
           <h2 className="text-2xl md:text-3xl font-semibold text-[#1F2937]">关爱母婴健康工作委员会领导</h2>
-          <div className="mt-6 flex flex-col gap-4">
-            {teamMembers.map((member) => (
-              <article key={member.title} className="rounded-xl border border-[#F3D5DC] bg-[#FFF9FB] p-4 shadow-sm">
-                <h3 className="text-base font-semibold text-[#1F2937]">{member.title}</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {Array.from({ length: member.count }).map((_, index) => (
-                    <div key={`${member.title}-${index}`} className="w-20 h-24 rounded-xl border border-dashed border-[#EFB7BA] bg-white flex items-center justify-center text-xs text-[#C73A5C]">
-                      照片
+          {associationTeamStructure.length ? (
+            <div className="mt-6 flex flex-col gap-4">
+              {associationTeamStructure.map((role) => (
+                <article key={role.roleKey || role.slug} className="rounded-xl border border-[#F3D5DC] bg-[#FFF9FB] p-4 shadow-sm">
+                  <h3 className="text-base font-semibold text-[#1F2937]">{role.roleTitle || role.title || '未命名职务'}</h3>
+                  <div className="mt-3 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {(role.members || []).map((member) => (
+                      <div key={member.id} className="rounded-xl border border-[#EFB7BA]/60 bg-white p-2">
+                        <div className="mx-auto w-full max-w-[128px] aspect-[5/7] rounded-lg overflow-hidden border border-[#F3D5DC]">
+                          {member.image ? (
+                            <img src={member.image} alt={member.caption || '成员照片'} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center border border-dashed border-[#EFB7BA] text-xs text-[#C73A5C]">
+                              照片
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-2 text-center text-xs text-[#374151]">{member.caption || '未填写文字'}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {!role.members || role.members.length === 0 ? (
+                    <div className="mt-3 rounded-lg border border-dashed border-[#EFB7BA] bg-white px-3 py-2 text-xs text-[#6B7280]">
+                      暂无成员
                     </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed border-[#E5C0C8] bg-[#FFF8FA] p-6 text-sm text-[#6B7280]">
+              团队构成内容建设中
+            </div>
+          )}
         </section>
       );
     }
@@ -188,11 +198,11 @@ const AssociationIntro = () => {
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="rounded-xl border border-[#F3D5DC] bg-[#FFF6F9] p-4">
               <h3 className="text-base font-semibold text-[#C73A5C]">使命</h3>
-              <p className="mt-2 text-[#374151]">关爱母婴健康，引领行业发展。</p>
+              <p className="mt-2 text-[20px] text-center text-[#374151]">关爱母婴健康，引领行业发展</p>
             </div>
             <div className="rounded-xl border border-[#F3D5DC] bg-[#FFF6F9] p-4">
               <h3 className="text-base font-semibold text-[#C73A5C]">远景</h3>
-              <p className="mt-2 text-[#374151]">成为中国母婴产业最权威、最专业的资源平台。</p>
+              <p className="mt-2 text-[20px] text-center text-[#374151]">成为中国母婴产业最权威、最专业的资源平台</p>
             </div>
           </div>
           <div className="mt-6 rounded-xl border border-[#F3D5DC] bg-[#FFFCFD] p-4 md:p-5">

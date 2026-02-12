@@ -3,56 +3,65 @@ import { useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
+import { topicVideos } from '../data/topicVideos';
 
 const PAGE_SIZE = 4;
 
-const videoItems = [
-  {
-    id: 'video-1',
-    title: '专题视频 01：母婴健康基础认知',
-    summary: '围绕母婴健康基本理念进行导读，帮助建立系统化认知框架。',
-    duration: '12:30'
-  },
-  {
-    id: 'video-2',
-    title: '专题视频 02：产后恢复常见问题',
-    summary: '聚焦产后阶段常见问题与家庭照护中的关键注意事项。',
-    duration: '10:45'
-  },
-  {
-    id: 'video-3',
-    title: '专题视频 03：婴幼儿家庭照护要点',
-    summary: '从日常照护、生活习惯到安全管理，梳理核心实践建议。',
-    duration: '15:20'
-  },
-  {
-    id: 'video-4',
-    title: '专题视频 04：家庭健康管理方法',
-    summary: '介绍家庭场景下可执行的健康管理路径与落地做法。',
-    duration: '09:50'
-  },
-  {
-    id: 'video-5',
-    title: '专题视频 05：行业案例分享',
-    summary: '通过典型案例讲解服务流程与实际操作中的关键节点。',
-    duration: '13:10'
-  },
-  {
-    id: 'video-6',
-    title: '专题视频 06：健康教育与服务协同',
-    summary: '讲解健康教育如何与服务体系协同推进并形成长期机制。',
-    duration: '11:05'
+const toEmbedUrl = (rawUrl) => {
+  const text = String(rawUrl || '').trim();
+  if (!text) return '';
+  try {
+    const url = new URL(text);
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    if (host.includes('youtube.com')) {
+      const v = url.searchParams.get('v');
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (host.includes('youtu.be')) {
+      const videoId = url.pathname.replace(/^\/+/, '').split('/')[0];
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return text;
+  } catch {
+    return text;
   }
-];
+};
+
+const isTopicVideoValid = (item) => {
+  if (!item || item.status !== 'published') return false;
+  if (item.cardType === 'image_link') {
+    return Boolean(String(item.coverImage || '').trim()) && Boolean(String(item.actionUrl || '').trim());
+  }
+  if (item.cardType === 'embedded_video') {
+    return Boolean(String(item.playUrl || '').trim());
+  }
+  return false;
+};
+
+const sortedVisibleVideos = (topicVideos || [])
+  .filter(Boolean)
+  .filter((item) => isTopicVideoValid(item))
+  .sort((a, b) => {
+    const pinnedA = a?.isPinned ? 1 : 0;
+    const pinnedB = b?.isPinned ? 1 : 0;
+    if (pinnedA !== pinnedB) return pinnedB - pinnedA;
+    const sortA = Number(a?.sort_order || 0);
+    const sortB = Number(b?.sort_order || 0);
+    if (sortA !== sortB) return sortA - sortB;
+    const updatedA = Date.parse(String(a?.updated_at || '')) || 0;
+    const updatedB = Date.parse(String(b?.updated_at || '')) || 0;
+    return updatedB - updatedA;
+  });
 
 const TopicVideos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const totalPages = Math.max(1, Math.ceil(videoItems.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedVisibleVideos.length / PAGE_SIZE));
   const requestedPage = Number(searchParams.get('page') || '1');
   const currentPage = Number.isNaN(requestedPage) ? 1 : Math.min(Math.max(1, requestedPage), totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const pagedVideos = videoItems.slice(startIndex, startIndex + PAGE_SIZE);
-  const featured = videoItems[0];
+  const pagedVideos = sortedVisibleVideos.slice(startIndex, startIndex + PAGE_SIZE);
+  const featured = sortedVisibleVideos.find((item) => item?.isFeatured) || sortedVisibleVideos[0] || null;
+  const pageIntro = featured?.pageIntro || '专题视频围绕母婴健康服务、家庭照护实践与行业发展展开，内容结构简明，便于快速检索与持续更新。';
 
   const goToPage = (page) => {
     setSearchParams(page <= 1 ? {} : { page: String(page) });
@@ -72,53 +81,74 @@ const TopicVideos = () => {
 
             <section className="mt-6 grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
               <div className="rounded-2xl border border-[#E5C0C8]/60 bg-[#FFF9FB] p-4">
-                <div className="aspect-video rounded-xl border-2 border-dashed border-[#EFB7BA] bg-white flex items-center justify-center text-[#C73A5C] text-sm md:text-base">
-                  主视频播放位（预留）
+                <div className="aspect-video rounded-xl border border-[#EFB7BA] bg-white overflow-hidden">
+                  {featured?.cardType === 'embedded_video' && featured?.playUrl ? (
+                    <iframe
+                      title={featured.title || '专题视频'}
+                      src={toEmbedUrl(featured.playUrl)}
+                      className="h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : featured?.coverImage ? (
+                    <img src={featured.coverImage} alt={featured.title || '专题视频封面'} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-[#C73A5C] text-sm md:text-base">
+                      暂无主视频
+                    </div>
+                  )}
                 </div>
-                <h2 className="mt-4 text-xl font-semibold text-[#1F2937]">{featured.title}</h2>
-                <p className="mt-2 text-sm text-[#6B7280] leading-7">{featured.summary}</p>
+                <h2 className="mt-4 text-xl font-semibold text-[#1F2937]">{featured?.title || '暂无可展示视频'}</h2>
+                <p className="mt-2 text-sm text-[#6B7280] leading-7">{featured?.summary || '请在后台发布专题视频后查看展示内容。'}</p>
               </div>
 
               <div className="rounded-2xl border border-[#E5C0C8]/60 bg-white p-4">
                 <h3 className="text-lg font-semibold text-[#1F2937]">视频简介</h3>
                 <p className="mt-3 text-sm text-[#6B7280] leading-7">
-                  专题视频围绕母婴健康服务、家庭照护实践与行业发展展开，内容结构简明，便于快速检索与持续更新。
+                  {pageIntro}
                 </p>
-                <div className="mt-4 rounded-xl bg-[#FFF5F7] border border-[#F3D5DC] p-3 text-sm text-[#4B5563]">
-                  当前为模板布局，可按“视频封面 + 标题 + 时长 + 播放链接”直接扩展。
-                </div>
               </div>
             </section>
 
             <section className="mt-8">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold text-[#1F2937]">视频总览</h2>
-                <span className="text-sm text-[#6B7280]">共 {videoItems.length} 个视频</span>
+                <span className="text-sm text-[#6B7280]">共 {sortedVisibleVideos.length} 个视频</span>
               </div>
 
               <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pagedVideos.map((item, index) => (
-                  <article key={item.id} className="rounded-xl border border-[#F3D5DC] bg-[#FFFCFD] p-4">
+                {pagedVideos.length ? pagedVideos.map((item, index) => (
+                  <article key={item.id || item.slug || `${item.title}-${index}`} className="rounded-xl border border-[#F3D5DC] bg-[#FFFCFD] p-4">
                     <div className="flex items-start gap-3">
                       <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EA5036] text-xs font-semibold text-white">
                         {startIndex + index + 1}
                       </span>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-base font-semibold text-[#1F2937]">{item.title}</h3>
-                        <p className="mt-2 text-sm text-[#6B7280] leading-7">{item.summary}</p>
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className="text-xs text-[#9CA3AF]">时长：{item.duration}</span>
-                          <button
-                            type="button"
-                            className="text-sm font-medium text-[#194F92] hover:underline"
-                          >
-                            查看详情
-                          </button>
+                        <p className="mt-2 text-sm text-[#6B7280] leading-7">{item.summary || '暂无摘要'}</p>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="text-xs text-[#9CA3AF]">
+                            {item.duration ? `时长：${item.duration}` : ''}
+                          </span>
+                          {item.cardType === 'embedded_video' && item.playUrl ? (
+                            <a href={item.playUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#194F92] hover:underline">
+                              查看详情
+                            </a>
+                          ) : null}
+                          {item.cardType === 'image_link' && item.actionUrl ? (
+                            <a href={item.actionUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#194F92] hover:underline">
+                              查看详情
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                     </div>
                   </article>
-                ))}
+                )) : (
+                  <div className="rounded-xl border border-dashed border-[#E5C0C8] bg-[#FFF9FB] px-4 py-8 text-center text-sm text-[#6B7280] md:col-span-2">
+                    暂无已发布的专题视频
+                  </div>
+                )}
               </div>
 
               <div className="mt-8 flex items-center justify-center gap-2">

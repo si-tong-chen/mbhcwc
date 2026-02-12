@@ -1,7 +1,8 @@
 import cover1 from '../images/cover_1.png';
 import cover2 from '../images/cover_2.png';
+import { resolveContentModule } from './runtimeContent';
 
-export const internationalProjects = [
+const fallbackInternationalProjects = [
   {
     slug: 'master-tour-lecture-2024-03-15',
     title: '【视频】国际宫健康管理世界大师中国行任相姬教授',
@@ -123,6 +124,8 @@ export const internationalProjects = [
     ]
   }
 ];
+
+export const internationalProjects = resolveContentModule('internationalProjects', fallbackInternationalProjects);
 
 export const getInternationalProjectBySlug = (slug) =>
   internationalProjects.find((item) => item.slug === slug);

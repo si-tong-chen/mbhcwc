@@ -2,23 +2,23 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Navigation from '../components/Navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import productHero from '../images/product_hero.jpg';
-import productBook from '../images/product_book.png';
-import productBp from '../images/product_bp.jpg';
-import product2 from '../images/product_2.jpg';
-import charityPoverty from '../images/charity_poverty.jpg';
-import charityClinic from '../images/charity_clinic.jpg';
-import charityEdu from '../images/charity_edu.jpg';
 import { focusNews } from '../data/focusNews';
 import { associationNotices } from '../data/associationNotices';
 import { internationalProjects } from '../data/internationalProjects';
 import { expertVoices } from '../data/expertVoices';
-import { healthLectures } from '../data/healthLectures';
+import { healthLecturesUpcoming, healthLecturesReplay } from '../data/healthLectures';
 import { maternalTopics } from '../data/maternalTopics';
+import { products } from '../data/products';
+import { charityHomes } from '../data/charityHomes';
+import { careWorkstations } from '../data/careWorkstations';
+import { promoCategories, promoServices } from '../data/promoServices';
+import { courses as trainingCourses, tracks as trainingTracks } from '../data/trainingCourses';
+import { getHomeLatestTips } from '../data/homeLatestTips';
 const Index = () => {
   const location = useLocation();
+  const latestTips = getHomeLatestTips();
   const homeFocusNews = focusNews.slice(0, 3);
   const homeAssociationNotices = [...associationNotices]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -26,20 +26,33 @@ const Index = () => {
   const homeInternationalProjects = [...internationalProjects]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 4);
-  const homeExpertVoices = expertVoices.slice(0, 3);
-  const now = new Date();
-  const upcomingHomeHealthLectures = [...healthLectures]
-    .filter((item) => new Date(item.dateTime) >= now)
-    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
+  const homeExpertVoices = [...expertVoices]
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .slice(0, 3);
+  const upcomingHomeHealthLectures = [...healthLecturesUpcoming]
+    .sort((a, b) => {
+      const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+      if (bySort !== 0) return bySort;
+      return new Date(a.dateTime) - new Date(b.dateTime);
+    })
     .slice(0, 6);
-  const pastHomeHealthLectures = [...healthLectures]
-    .filter((item) => new Date(item.dateTime) < now && item.videoUrl)
-    .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime))
+  const pastHomeHealthLectures = [...healthLecturesReplay]
+    .filter((item) => item.videoUrl)
+    .sort((a, b) => {
+      const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+      if (bySort !== 0) return bySort;
+      return new Date(b.dateTime) - new Date(a.dateTime);
+    })
     .slice(0, 6);
+  const featuredProduct = products[0] || null;
+  const homeProductList = products.slice(1, 3);
   const [focusIndex, setFocusIndex] = useState(0);
-  const [trainingCategory, setTrainingCategory] = useState('母婴');
+  const [latestTipIndex, setLatestTipIndex] = useState(0);
+  const [latestTipDistance, setLatestTipDistance] = useState(0);
+  const [trainingCategory, setTrainingCategory] = useState('');
   const [upcomingLectureIndex, setUpcomingLectureIndex] = useState(0);
   const [pastLectureIndex, setPastLectureIndex] = useState(0);
+  const [projectPromoPageIndex, setProjectPromoPageIndex] = useState(0);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinSubmitting, setJoinSubmitting] = useState(false);
   const [joinStatus, setJoinStatus] = useState({ type: '', message: '' });
@@ -50,6 +63,8 @@ const Index = () => {
     city: '',
     message: ''
   });
+  const latestTipTrackRef = useRef(null);
+  const latestTipItemRef = useRef(null);
 
   useEffect(() => {
     if (homeFocusNews.length <= 1) return;
@@ -76,6 +91,23 @@ const Index = () => {
   }, [pastHomeHealthLectures.length]);
 
   useEffect(() => {
+    setLatestTipIndex(0);
+  }, [latestTips.length]);
+
+  useEffect(() => {
+    const measureDistance = () => {
+      const trackWidth = latestTipTrackRef.current?.offsetWidth || 0;
+      const itemWidth = latestTipItemRef.current?.offsetWidth || 0;
+      const distance = trackWidth + itemWidth;
+      setLatestTipDistance(distance > 0 ? distance : 0);
+    };
+
+    measureDistance();
+    window.addEventListener('resize', measureDistance);
+    return () => window.removeEventListener('resize', measureDistance);
+  }, [latestTipIndex, latestTips]);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (location.pathname !== '/' || params.get('target') !== 'contact') return;
     const timer = setTimeout(() => {
@@ -96,6 +128,9 @@ const Index = () => {
   }, [location.pathname, location.search]);
 
   const currentFocus = homeFocusNews[focusIndex];
+  const currentLatestTip = latestTips[latestTipIndex] || '';
+  const tipMoveDistance = latestTipDistance > 0 ? latestTipDistance : 1200;
+  const latestTipDuration = Math.max(8, Math.ceil(tipMoveDistance / 110));
   const formatFocusDate = (dateStr) => {
     const [year, month, day] = dateStr.split('-');
     return {
@@ -106,105 +141,55 @@ const Index = () => {
   const currentFocusDate = formatFocusDate(currentFocus.date);
   const secondaryFocus = homeFocusNews.filter((_, index) => index !== focusIndex).slice(0, 2);
 
-  const trainingPaths = {
-    母婴: {
-      hero: {
-        title: '母婴照护与早教服务',
-        desc: '从育婴、保育到家育与情商教育，覆盖母婴服务核心岗位。',
-        tags: ['入门首选', '官方推荐'],
-        href: '/training/tracks/maternal-early-education'
-      },
-      paths: [
-        {
-          stageLabel: '入门',
-          title: '育婴师',
-          who: '适合新手与家庭照护从业者',
-          tag: '入门首选',
-          href: '/training/courses/yuyingshi'
+  const homeTrainingData = useMemo(() => {
+    const categoryOrder = ['母婴', '中医', '健康', '其他'];
+    const categoryMap = {};
+
+    categoryOrder.forEach((category) => {
+      const categoryTracks = trainingTracks.filter((track) => (track.homeCategory || '其他') === category);
+      if (!categoryTracks.length) return;
+      const categoryTrackSlugSet = new Set(categoryTracks.map((track) => track.slug));
+      const categoryCourses = trainingCourses.filter((course) => categoryTrackSlugSet.has(course.trackSlug));
+      const heroTrack = categoryTracks[0];
+      const tags = [];
+      if (categoryCourses.some((course) => course.isFeatured)) tags.push('官方推荐');
+      if (categoryCourses.some((course) => course.hasPractical)) tags.push('实操为主');
+      if (!tags.length) tags.push('入门首选');
+
+      categoryMap[category] = {
+        hero: {
+          title: heroTrack.name,
+          desc: heroTrack.positioning || '该方向课程正在持续更新。',
+          tags,
+          href: `/training/tracks/${heroTrack.slug}`
         },
-        {
-          stageLabel: '进阶',
-          title: '母婴护理师',
-          who: '适合一线护理经验者提升',
-          tag: '就业导向',
-          href: '/training/courses/muyinghulishi'
-        },
-        {
-          stageLabel: '专项',
-          title: '情商教育培训师',
-          who: '适合早教与家庭教育从业者',
-          tag: '实操为主',
-          href: '/training/courses/qingshangjiaoyu-peixunshi'
-        }
-      ],
-      totalCount: 5
-    },
-    中医: {
-      hero: {
-        title: '中医康复理疗服务',
-        desc: '覆盖理疗、推拿、经络、针灸与小儿推拿的完整实操路径。',
-        tags: ['就业导向', '实操为主'],
-        href: '/training/tracks/tcm-rehab-therapy'
-      },
-      paths: [
-        {
-          stageLabel: '入门',
-          title: '中医康复理疗师',
-          who: '适合健康理疗新人',
-          tag: '入门首选',
-          href: '/training/courses/zhongyi-kangfu-liliaoshi'
-        },
-        {
-          stageLabel: '进阶',
-          title: '中医穴位调理师',
-          who: '适合有基础的调理从业者',
-          tag: '官方推荐',
-          href: '/training/courses/zhongyi-xuewei-tiaolishi'
-        },
-        {
-          stageLabel: '专项',
-          title: '中医针灸',
-          who: '适合提升专项能力者',
-          tag: '实操为主',
-          href: '/training/courses/zhongyi-zhenjiu'
-        }
-      ],
-      totalCount: 9
-    },
-    健康: {
-      hero: {
-        title: '健康管理专项路径',
-        desc: '聚焦评估与干预，建立持续管理能力。',
-        tags: ['入门首选', '官方推荐'],
-        href: '/training/tracks/health-management'
-      },
-      paths: [
-        {
-          stageLabel: '入门',
-          title: '身高管理师',
-          who: '适合健康管理方向新手',
-          tag: '入门首选',
-          href: '/training/courses/shengao-guanlishi'
-        },
-        {
-          stageLabel: '进阶',
-          title: '健康管理师',
-          who: '适合体检与慢病管理岗位',
-          tag: '就业导向',
-          href: '/training/courses/jiankang-guanlishi'
-        },
-        {
-          stageLabel: '专项',
-          title: '健康管理师（进阶）',
-          who: '适合系统化提升干预能力',
-          tag: '官方推荐',
-          href: '/training/courses/jiankang-guanlishi'
-        }
-      ],
-      totalCount: 2
+        paths: categoryCourses.slice(0, 3).map((course, index) => ({
+          title: course.name,
+          who: course.audience || '适合相关岗位从业者与学习者',
+          tag: course.isFeatured ? '官方推荐' : (course.hasPractical ? '实操为主' : '就业导向'),
+          href: `/training/courses/${course.slug}`
+        })),
+        totalCount: categoryCourses.length
+      };
+    });
+
+    return {
+      labels: categoryOrder.filter((item) => Boolean(categoryMap[item])),
+      map: categoryMap
+    };
+  }, []);
+
+  useEffect(() => {
+    if (homeTrainingData.labels.length === 0) {
+      if (trainingCategory) setTrainingCategory('');
+      return;
     }
-  };
-  const currentPath = trainingPaths[trainingCategory];
+    if (!homeTrainingData.labels.includes(trainingCategory)) {
+      setTrainingCategory(homeTrainingData.labels[0]);
+    }
+  }, [homeTrainingData, trainingCategory]);
+
+  const currentPath = trainingCategory ? homeTrainingData.map[trainingCategory] : null;
 
   const openJoinForm = (project) => {
     setJoinStatus({ type: '', message: '' });
@@ -267,29 +252,46 @@ const Index = () => {
     }
   };
 
-  const projectPromos = [
-    {
-      title: '生育医学项目',
-      desc: '国际协同生育医学服务，覆盖评估、方案与流程支持。',
-      href: '/promo/reproductive-medicine',
-      sceneCoverClass: 'bg-[linear-gradient(180deg,#FFFFFF_0%,#FFF6F8_100%)]',
-      sceneLabel: '医疗协作'
-    },
-    {
-      title: '细胞生物样本储存库',
-      desc: '全球级样本储存与检测能力，支撑科研与健康管理服务。',
-      href: '/promo/cell-biobank',
-      sceneCoverClass: 'bg-[linear-gradient(180deg,#FFFFFF_0%,#FFF6F8_100%)]',
-      sceneLabel: '细胞储存'
-    },
-    {
-      title: '基因工程服务技术',
-      desc: '5类基因工程技术服务，支持后续按技术类别持续扩展。',
-      href: '/promo/gene-engineering',
-      sceneCoverClass: 'bg-[linear-gradient(180deg,#FFFFFF_0%,#FFF6F8_100%)]',
-      sceneLabel: '技术服务'
+  const projectPromos = useMemo(() => {
+    const labels = ['医疗协作', '细胞储存', '技术服务', '项目服务'];
+    return (promoCategories || []).map((category, index) => {
+      const firstService = (promoServices || []).find((service) => service.categorySlug === category.slug);
+      return {
+        title: category.name,
+        desc: category.positioning || firstService?.summary || '该项目服务内容持续更新中。',
+        href: `/promo/${category.slug}`,
+        sceneCoverClass: 'bg-[linear-gradient(180deg,#FFFFFF_0%,#FFF6F8_100%)]',
+        sceneLabel: category.sceneLabel || labels[index] || '项目服务'
+      };
+    });
+  }, []);
+
+  const projectPromoPages = useMemo(() => {
+    const chunkSize = 4;
+    const chunks = [];
+    for (let i = 0; i < projectPromos.length; i += chunkSize) {
+      chunks.push(projectPromos.slice(i, i + chunkSize));
     }
-  ];
+    return chunks;
+  }, [projectPromos]);
+
+  useEffect(() => {
+    if (projectPromoPages.length === 0) {
+      if (projectPromoPageIndex !== 0) setProjectPromoPageIndex(0);
+      return;
+    }
+    if (projectPromoPageIndex >= projectPromoPages.length) {
+      setProjectPromoPageIndex(0);
+    }
+  }, [projectPromoPages, projectPromoPageIndex]);
+
+  useEffect(() => {
+    if (projectPromoPages.length <= 1) return;
+    const timer = setInterval(() => {
+      setProjectPromoPageIndex((prev) => (prev + 1) % projectPromoPages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [projectPromoPages.length]);
 
   const ProjectPromoCard = ({ item }) => (
     <Link
@@ -317,18 +319,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFF7F9_0%,#FFF1F4_100%)]">
-      {/* 添加祥云纹样背景 */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 5C30 5 15 20 15 40c0 15 10 25 25 30 15 5 25 15 25 30 0-15 10-25 25-30 15-5 25-15 25-30 0-20-15-35-35-35z' fill='%23d97706'/%3E%3C/svg%3E")`,
-        backgroundSize: '200px 200px'
-      }}></div>
-      
-      {/* 顶部点阵纹理 */}
-      <div className="fixed top-0 left-0 right-0 h-32 opacity-10 pointer-events-none" style={{
-        backgroundImage: `radial-gradient(circle, %23EFB7BA 1px, transparent 1px)`,
-        backgroundSize: '20px 20px'
-      }}></div>
-
       <Header />
       <Navigation />
       <Hero />
@@ -338,17 +328,30 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             {/* 最新提示 - 滚动播出 */}
-            <div className="flex items-center overflow-hidden">
+            <div className="mr-4 flex min-w-0 flex-1 items-center overflow-hidden">
               <span className="bg-[#EFB7BA] text-[#194F92] px-2 py-1 rounded text-sm font-bold mr-4 flex-shrink-0">最新提示</span>
-              <div className="overflow-hidden whitespace-nowrap text-[#194F92]">
-                <div className="inline-block animate-marquee text-[#194F92]">
-                  市委常委"推销员"，生态科技带身边— 中共九江市委常委陈和民率领招商考察团进京调研
-                </div>
+              <div ref={latestTipTrackRef} className="relative h-6 min-w-0 flex-1 overflow-hidden whitespace-nowrap text-[#194F92]">
+                <span
+                  ref={latestTipItemRef}
+                  key={`${latestTipIndex}-${currentLatestTip}`}
+                  className="absolute left-full top-1/2 inline-block -translate-y-1/2 animate-tip-marquee text-[#194F92]"
+                  style={{
+                    animationDuration: `${latestTipDuration}s`,
+                    animationIterationCount: latestTips.length <= 1 ? 'infinite' : '1',
+                    '--tip-distance': `${tipMoveDistance}px`
+                  }}
+                  onAnimationEnd={() => {
+                    if (latestTips.length <= 1) return;
+                    setLatestTipIndex((prev) => (prev + 1) % latestTips.length);
+                  }}
+                >
+                  {currentLatestTip}
+                </span>
               </div>
             </div>
             
             {/* 协会工作快捷入口 */}
-            <div className="flex items-center space-x-6">
+            <div className="flex flex-shrink-0 items-center space-x-6">
               <div className="flex items-center space-x-4">
                 <Link to="/training" className="flex items-center space-x-1 text-[#F53163] hover:text-[#194F92] transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -375,12 +378,14 @@ const Index = () => {
       </div>
 
       <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
+        @keyframes tipMarquee {
+          0% { transform: translate(0, -50%); }
+          100% { transform: translate(calc(-1 * var(--tip-distance)), -50%); }
         }
-        .animate-marquee {
-          animation: marquee 15s linear infinite;
+        .animate-tip-marquee {
+          animation-name: tipMarquee;
+          animation-timing-function: linear;
+          animation-fill-mode: forwards;
         }
       `}</style>
       
@@ -579,7 +584,10 @@ const Index = () => {
                         {expert.name}
                       </Link>
                     </h3>
-                    <p className="mt-2 text-sm text-gray-500 text-center line-clamp-2">{expert.institution}</p>
+                    <p className="mt-2 text-sm text-[#194F92] text-center line-clamp-2">{expert.title}</p>
+                    {expert.institution ? (
+                      <p className="mt-1 text-xs text-gray-500 text-center line-clamp-1">{expert.institution}</p>
+                    ) : null}
                     <div className="mt-4 w-full bg-[#E5C0C8]/30 rounded-lg p-3 text-sm text-gray-700 line-clamp-4 relative">
                       <span className="absolute top-2 left-3 text-[#CBD5F0]/60 text-lg" aria-hidden="true">“</span>
                       {expert.quote}
@@ -744,65 +752,56 @@ const Index = () => {
               </div>
 
               <div className="rounded-2xl bg-white border border-[#F3D5DC] shadow-[0_8px_24px_rgba(0,0,0,0.08)] overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                <div className="flex flex-col md:flex-row">
-                  <div className="flex-1 p-6">
-                    <div className="text-xl font-semibold text-gray-900">家庭健康推荐方案</div>
-                    <p className="mt-2 text-sm text-gray-600 leading-6">覆盖认知、监测与日常行动</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="text-xs px-2 py-1 rounded-full bg-[#FADADD] text-[#C73A5C]">官方推荐</span>
-                      <span className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">家庭适用</span>
+                {featuredProduct ? (
+                  <div className="flex flex-col md:flex-row">
+                    <div className="flex-1 p-6">
+                      <div className="text-xl font-semibold text-gray-900">{featuredProduct.name || '家庭健康推荐方案'}</div>
+                      <p className="mt-2 text-sm text-gray-600 leading-6">{featuredProduct.description?.[0] || '暂无推荐方案简介'}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="text-xs px-2 py-1 rounded-full bg-[#FADADD] text-[#C73A5C]">官方推荐</span>
+                        {featuredProduct.tag ? (
+                          <span className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">{featuredProduct.tag}</span>
+                        ) : null}
+                      </div>
+                      <Link to={`/products/${featuredProduct.slug}`} className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-[#194F92] text-white text-sm font-medium shadow-[0_6px_16px_rgba(0,0,0,0.12)] hover:bg-[#143B70] transition">
+                        查看 →
+                      </Link>
                     </div>
-                    <Link to="/plans/family-health" className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-[#194F92] text-white text-sm font-medium shadow-[0_6px_16px_rgba(0,0,0,0.12)] hover:bg-[#143B70] transition">
-                      查看推荐方案 →
-                    </Link>
+                    <div className="relative w-full md:w-64 h-28 md:h-auto overflow-hidden">
+                      <img
+                        src={featuredProduct.cover}
+                        alt={featuredProduct.name || '家庭健康推荐方案封面'}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/10 to-transparent"></div>
+                      <div className="absolute inset-0 bg-[#194F92]/10 mix-blend-multiply"></div>
+                    </div>
                   </div>
-                  <div className="relative w-full md:w-64 h-28 md:h-auto overflow-hidden">
-                    <img
-                      src={productHero}
-                      alt="家庭健康推荐方案封面"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/10 to-transparent"></div>
-                    <div className="absolute inset-0 bg-[#194F92]/10 mix-blend-multiply"></div>
-                  </div>
-                </div>
+                ) : (
+                  <div className="p-6 text-sm text-[#6B7280]">暂无推荐方案</div>
+                )}
               </div>
 
               <div className="mt-6 space-y-3">
-                <Link to="/products/zhonghua-zhongyi-kunlun-book" className="flex items-center justify-between rounded-xl bg-white border border-[#F3D5DC] px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
-                      <img
-                        src={productBook}
-                        alt="中华中医昆仑（书籍）"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-[#194F92]/10 mix-blend-multiply"></div>
+                {homeProductList.map((product) => (
+                  <Link key={product.slug} to={`/products/${product.slug}`} className="flex items-center justify-between rounded-xl bg-white border border-[#F3D5DC] px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
+                        <img
+                          src={product.cover}
+                          alt={product.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-[#194F92]/10 mix-blend-multiply"></div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">{product.category}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">中华中医昆仑（书籍）</div>
-                      <div className="text-xs text-gray-500 mt-1">中医文化读物</div>
-                    </div>
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">中医文化</span>
-                </Link>
-                <Link to="/products/tiandi-jinghua-water" className="flex items-center justify-between rounded-xl bg-white border border-[#F3D5DC] px-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
-                      <img
-                        src={product2}
-                        alt="天地精华"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-[#194F92]/10 mix-blend-multiply"></div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">天地精华</div>
-                      <div className="text-xs text-gray-500 mt-1">天然矿泉水</div>
-                    </div>
-                  </div>
-                  <span className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">日常饮用</span>
-                </Link>
+                    <span className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]">{product.tag || '关爱产品'}</span>
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -819,7 +818,7 @@ const Index = () => {
               </div>
 
               <div className="flex items-center gap-3 mt-6">
-                {['母婴', '中医', '健康'].map((item) => (
+                {homeTrainingData.labels.map((item) => (
                   <button
                     key={item}
                     type="button"
@@ -836,59 +835,65 @@ const Index = () => {
                 ))}
               </div>
 
-              <div className="grid grid-cols-12 gap-6 items-stretch mt-6">
-                <Link
-                  to={currentPath.hero.href}
-                  className="col-span-12 lg:col-span-5 rounded-2xl bg-white border border-[#F3D5DC] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-6 flex flex-col justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#194F92]/20"
-                >
-                  <div>
-                    <div className="text-xl font-semibold text-gray-900">{currentPath.hero.title}</div>
-                    <p className="mt-2 text-sm text-gray-600 leading-6">{currentPath.hero.desc}</p>
-                    <div className="mt-2 text-xs text-gray-500">
-                      预计学习周期：4–8 周｜适合零基础
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {currentPath.hero.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]"
+              {currentPath ? (
+                <>
+                  <div className="grid grid-cols-12 gap-6 items-stretch mt-6">
+                    <Link
+                      to={currentPath.hero.href}
+                      className="col-span-12 lg:col-span-5 rounded-2xl bg-white border border-[#F3D5DC] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-6 flex flex-col justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#194F92]/20"
+                    >
+                      <div>
+                        <div className="text-xl font-semibold text-gray-900">{currentPath.hero.title}</div>
+                        <p className="mt-2 text-sm text-gray-600 leading-6">{currentPath.hero.desc}</p>
+                        <div className="mt-2 text-xs text-gray-500">
+                          可查看该方向下全部课程与筛选项
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {currentPath.hero.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs px-2 py-1 rounded-full border border-[#F3D5DC] text-[#C73A5C]"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-6 text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline">查看学习路径 →</div>
+                    </Link>
+
+                    <div className="col-span-12 lg:col-span-7 flex flex-col gap-4">
+                      {currentPath.paths.map((item) => (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className="rounded-2xl bg-white border border-[#F3D5DC] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-start justify-between min-h-[120px] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#194F92]/20"
                         >
-                          {tag}
-                        </span>
+                          <div>
+                            <div className="text-base font-semibold text-gray-900">{item.title}</div>
+                            <div className="mt-1 text-sm text-gray-500 line-clamp-1">{item.who}</div>
+                          </div>
+                          <div className="text-right ml-4 flex flex-col items-end self-stretch justify-between">
+                            <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#9CA3AF]">
+                              {item.tag}
+                            </span>
+                            <div className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline">查看详情 →</div>
+                          </div>
+                        </Link>
                       ))}
                     </div>
                   </div>
-                  <div className="mt-6 text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline">查看学习路径 →</div>
-                </Link>
-
-                <div className="col-span-12 lg:col-span-7 flex flex-col gap-4">
-                  {currentPath.paths.map((item) => (
-                    <Link
-                      key={item.title}
-                      to={item.href}
-                      className="rounded-2xl bg-white border border-[#F3D5DC] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-start justify-between min-h-[120px] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#194F92]/20"
-                    >
-                      <div>
-                        <div className="text-xs text-[#194F92] font-medium">{item.stageLabel}</div>
-                        <div className="mt-1 text-base font-semibold text-gray-900">{item.title}</div>
-                        <div className="mt-1 text-sm text-gray-500 line-clamp-1">{item.who}</div>
-                      </div>
-                      <div className="text-right ml-4 flex flex-col items-end self-stretch justify-between">
-                        <span className="text-xs px-2 py-1 rounded-full bg-[#F3F4F6] text-[#9CA3AF]">
-                          {item.tag}
-                        </span>
-                        <div className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline">查看详情 →</div>
-                      </div>
+                  <div className="flex justify-center mt-6">
+                    <Link to="/training" className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1">
+                      查看更多职业方向（{currentPath.totalCount}项）
                     </Link>
-                  ))}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-6 rounded-xl border border-dashed border-[#E5C0C8] bg-[#FFF8FA] p-6 text-center text-sm text-[#6B7280]">
+                  培训内容建设中
                 </div>
-              </div>
-
-              <div className="flex justify-center mt-6">
-                <Link to="/training" className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1">
-                  查看更多职业方向（{currentPath.totalCount}项）
-                </Link>
-              </div>
+              )}
             </div>
 
           </div>
@@ -914,10 +919,30 @@ const Index = () => {
               </div>
 
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {projectPromos.map((item) => (
+                {(projectPromoPages[projectPromoPageIndex] || []).map((item) => (
                   <ProjectPromoCard key={item.title} item={item} />
                 ))}
               </div>
+              {projectPromos.length === 0 ? (
+                <div className="mt-6 rounded-xl border border-dashed border-[#F3D5DC] bg-white px-4 py-6 text-sm text-[#6B7280]">
+                  项目推广内容建设中
+                </div>
+              ) : null}
+              {projectPromoPages.length > 1 ? (
+                <div className="mt-5 flex items-center justify-center gap-2">
+                  {projectPromoPages.map((_, index) => (
+                    <button
+                      key={`promo-page-${index}`}
+                      type="button"
+                      aria-label={`切换到第 ${index + 1} 组项目推广`}
+                      onClick={() => setProjectPromoPageIndex(index)}
+                      className={`h-2 rounded-full transition ${
+                        index === projectPromoPageIndex ? 'w-5 bg-[#C73A5C]/80' : 'w-2 bg-[#C73A5C]/25 hover:bg-[#C73A5C]/45'
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             {/* 公益家园 */}
@@ -929,84 +954,39 @@ const Index = () => {
                 </h2>
               </div>
               <div className="space-y-4">
-                <div className="bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-center justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
-                      <img
-                        src={charityPoverty}
-                        alt="健康扶贫行动"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-[#FADADD]/35"></div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[#1F2937]">健康扶贫行动</div>
-                      <div className="mt-1 text-sm text-[#6B7280]">支持社区长期健康服务</div>
-                      <div className="mt-1 text-xs text-[#9CA3AF]">
-                        已帮助 <span className="font-semibold text-[#C73A5C]">10,000+</span> 人
+                {charityHomes.map((item) => (
+                  <div key={item.slug || item.title} className="bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-center justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
+                        <img
+                          src={item.image}
+                          alt={item.title || '公益项目'}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-[#FADADD]/35"></div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-[#1F2937]">{item.title || '公益项目'}</div>
+                        <div className="mt-1 text-sm text-[#6B7280]">{item.subtitle || '支持社区长期健康服务'}</div>
+                        <div className="mt-1 text-xs text-[#9CA3AF]">
+                          {item.metric || '持续推进公益服务'}
+                        </div>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => openJoinForm(item.title || '公益项目')}
+                      className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1"
+                    >
+                      我要参与
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openJoinForm('健康扶贫行动')}
-                    className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1"
-                  >
-                    我要参与
-                  </button>
-                </div>
-                <div className="bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-center justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
-                      <img
-                        src={charityClinic}
-                        alt="爱心义诊活动"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-[#FADADD]/35"></div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[#1F2937]">爱心义诊活动</div>
-                      <div className="mt-1 text-sm text-[#6B7280]">推动基层健康咨询与义诊</div>
-                      <div className="mt-1 text-xs text-[#9CA3AF]">
-                        累计服务 <span className="font-semibold text-[#C73A5C]">50,000+</span> 人次
-                      </div>
-                    </div>
+                ))}
+                {charityHomes.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-[#F3D5DC] bg-white px-4 py-6 text-sm text-[#6B7280]">
+                    公益家园内容建设中
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openJoinForm('爱心义诊活动')}
-                    className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1"
-                  >
-                    我要参与
-                  </button>
-                </div>
-                <div className="bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-5 flex items-center justify-between transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)]">
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#F3D5DC]">
-                      <img
-                        src={charityEdu}
-                        alt="健康知识普及"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-[#FADADD]/35"></div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[#1F2937]">健康知识普及</div>
-                      <div className="mt-1 text-sm text-[#6B7280]">一起推动社区健康教育</div>
-                      <div className="mt-1 text-xs text-[#9CA3AF]">
-                        覆盖 <span className="font-semibold text-[#C73A5C]">200+</span> 社区
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => openJoinForm('健康知识普及')}
-                    className="text-sm font-medium text-[#194F92] hover:text-[#143B70] hover:underline after:content-['→'] after:ml-1"
-                  >
-                    我要参与
-                  </button>
-                </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1028,27 +1008,15 @@ const Index = () => {
           <div className="relative mt-10">
             <div className="absolute inset-x-10 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-[#EFB7BA]/60 to-transparent pointer-events-none"></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-20 h-20 md:w-20 md:h-20 rounded-full bg-[#EFB7BA] ring-1 ring-white/20 shadow-sm flex items-center justify-center">
-                  <span className="text-white text-xl md:text-2xl font-bold tracking-tight">200+</span>
+              {(careWorkstations || []).slice(0, 3).map((item) => (
+                <div key={item.slug || item.title} className="flex flex-col items-center text-center gap-3">
+                  <div className="w-20 h-20 md:w-20 md:h-20 rounded-full bg-[#EFB7BA] ring-1 ring-white/20 shadow-sm flex items-center justify-center">
+                    <span className="text-white text-xl md:text-2xl font-bold tracking-tight">{item.value || '--'}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">{item.title || '统计项'}</h3>
+                  <p className="text-sm text-slate-500">{item.subtitle || '说明待完善'}</p>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900">工作站数量</h3>
-                <p className="text-sm text-slate-500">覆盖全国主要城市</p>
-              </div>
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-20 h-20 md:w-20 md:h-20 rounded-full bg-[#EFB7BA] ring-1 ring-white/20 shadow-sm flex items-center justify-center">
-                  <span className="text-white text-xl md:text-2xl font-bold tracking-tight">50万+</span>
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900">服务人次</h3>
-                <p className="text-sm text-slate-500">累计服务社区居民</p>
-              </div>
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-20 h-20 md:w-20 md:h-20 rounded-full bg-[#EFB7BA] ring-1 ring-white/20 shadow-sm flex items-center justify-center">
-                  <span className="text-white text-2xl md:text-3xl font-bold tracking-tight">98%</span>
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900">满意度</h3>
-                <p className="text-sm text-slate-500">居民满意度评价</p>
-              </div>
+              ))}
             </div>
           </div>
         </div>

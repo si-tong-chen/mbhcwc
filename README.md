@@ -80,3 +80,51 @@ git push -u origin main
 - 分页页面可用（讲座回放、视频总览、工作站）
 - 页尾相关链接可点击
 - 移动端页面布局无明显错位
+
+## 7. 后台使用（第一期）
+- 访问地址：`/#/admin`
+- 默认账号：`wangyan`
+- 默认密码：`wangyan1234`
+- 首次登录会自动把当前静态内容初始化为可管理数据（已发布状态）
+
+### 可配置管理员账号
+可通过环境变量覆盖默认账号密码：
+
+```bash
+ADMIN_EMAIL=your_admin_email ADMIN_PASSWORD=your_admin_password npm run dev
+```
+
+### 服务器本地持久化目录
+后台数据已改为 SQLite + 本地上传目录，不再使用临时目录。可配置：
+
+```bash
+APP_BASE_DIR=/var/www/nocode
+APP_DATA_DIR=/var/www/nocode/data
+APP_UPLOADS_DIR=/var/www/nocode/uploads
+APP_BACKUPS_DIR=/var/www/nocode/backups
+```
+
+默认（未配置时）会使用当前项目目录下的 `data/`、`uploads/`、`backups/`。
+
+### 每日备份（仅保留最近2份）
+已提供脚本：
+
+- `scripts/backup.sh`：手动执行一次备份
+- `scripts/install-cron.sh`：安装每天 `03:30` 自动备份的 crontab
+
+常用命令：
+
+```bash
+# 手动备份（可先验证）
+APP_BASE_DIR=/var/www/nocode /var/www/nocode/scripts/backup.sh
+
+# 安装定时备份（每天03:30）
+APP_BASE_DIR=/var/www/nocode /var/www/nocode/scripts/install-cron.sh
+```
+
+### 已支持能力
+- 仪表盘：模块统计、待发布数量
+- 内容管理：列表查询、新建/编辑/删除、发布/下线、自动草稿（每10秒）
+- 图片库：上传（自动压缩）、引用查询、批量替换、删除保护
+- 线索管理：查看公益报名/项目咨询、状态标记、CSV 导出（Excel 可打开）
+- 操作日志：记录后台变更动作

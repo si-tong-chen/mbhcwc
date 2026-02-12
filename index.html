@@ -10,6 +10,22 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      (function bootstrapApp() {
+        var published = document.createElement('script');
+        published.src = '/api/admin/published.js?t=' + Date.now();
+
+        var startMain = function () {
+          var main = document.createElement('script');
+          main.type = 'module';
+          main.src = '/src/main.jsx';
+          document.body.appendChild(main);
+        };
+
+        published.onload = startMain;
+        published.onerror = startMain;
+        document.body.appendChild(published);
+      })();
+    </script>
   </body>
 </html>

@@ -1,7 +1,8 @@
 import productBook from '../images/product_book.png';
 import product2 from '../images/product_2.jpg';
+import { resolveContentModule } from './runtimeContent';
 
-export const products = [
+const fallbackProducts = [
   {
     slug: 'zhonghua-zhongyi-kunlun-book',
     name: '中华中医昆仑（书籍）',
@@ -59,5 +60,34 @@ export const products = [
     ]
   }
 ];
+
+const normalizeProduct = (item = {}) => ({
+  ...item,
+  status: item.status || 'published',
+  sort_order: Number(item.sort_order || 0),
+  slug: item.slug || '',
+  name: item.name || '',
+  category: item.category || '',
+  tag: item.tag || '',
+  cover: item.cover || '',
+  gallery: Array.isArray(item.gallery) ? item.gallery : [],
+  highlights: Array.isArray(item.highlights) ? item.highlights : [],
+  specs: Array.isArray(item.specs) ? item.specs : [],
+  description: Array.isArray(item.description) ? item.description : [],
+  usage: Array.isArray(item.usage) ? item.usage : [],
+  faq: Array.isArray(item.faq) ? item.faq : []
+});
+
+const pickPublishedProducts = (rows = []) =>
+  rows
+    .map((item) => normalizeProduct(item))
+    .filter((item) => item.status === 'published')
+    .sort((a, b) => {
+      const bySort = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+      if (bySort !== 0) return bySort;
+      return String(a.updated_at || '').localeCompare(String(b.updated_at || ''));
+    });
+
+export const products = pickPublishedProducts(resolveContentModule('products', fallbackProducts));
 
 export const getProductBySlug = (slug) => products.find((item) => item.slug === slug);

@@ -12,6 +12,7 @@ const AssociationNoticeDetail = () => {
   if (!news) {
     return <Navigate to="/" replace />;
   }
+  const hasImage = Boolean(String(news.image || '').trim());
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFF7F9_0%,#FFF1F4_100%)]">
@@ -35,9 +36,11 @@ const AssociationNoticeDetail = () => {
               <span>发布时间：{news.date}</span>
             </div>
 
-            <div className="mt-6 rounded-xl overflow-hidden border border-[#E5C0C8]/60">
-              <img src={news.image} alt={news.title} className="w-full h-64 md:h-80 object-cover" />
-            </div>
+            {hasImage ? (
+              <div className="mt-6 rounded-xl overflow-hidden border border-[#E5C0C8]/60">
+                <img src={news.image} alt={news.title} className="w-full h-64 md:h-80 object-cover" />
+              </div>
+            ) : null}
 
             <div className="mt-8 space-y-5 text-[17px] leading-8 text-gray-700">
               {news.content.map((paragraph) => (

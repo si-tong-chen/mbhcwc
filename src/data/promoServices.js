@@ -1,11 +1,13 @@
 import cover1 from '../images/cover_1.png';
 import cover2 from '../images/cover_2.png';
 import productHero from '../images/product_hero.jpg';
+import { resolveContentModule } from './runtimeContent';
 
-export const promoCategories = [
+const fallbackPromoCategories = [
   {
     slug: 'reproductive-medicine',
     name: '生育医学项目',
+    sceneLabel: '医疗协作',
     positioning: '面向备孕与生育支持需求，提供国际协同医疗服务路径。',
     hero: {
       title: '国际生育医学协作服务',
@@ -16,6 +18,7 @@ export const promoCategories = [
   {
     slug: 'cell-biobank',
     name: '细胞生物样本储存库',
+    sceneLabel: '细胞储存',
     positioning: '围绕细胞样本存储、检测与管理提供标准化能力支撑。',
     hero: {
       title: '全球级细胞样本存储能力',
@@ -26,6 +29,7 @@ export const promoCategories = [
   {
     slug: 'gene-engineering',
     name: '基因工程服务技术',
+    sceneLabel: '技术服务',
     positioning: '提供5类基因工程服务技术，覆盖检测、分析与应用协同。',
     hero: {
       title: '基因工程技术服务矩阵',
@@ -98,7 +102,7 @@ const buildService = ({
   complianceNotice
 });
 
-export const promoServices = [
+const fallbackPromoServices = [
   buildService({
     slug: 'kulakov-ivf-third-party',
     categorySlug: 'reproductive-medicine',
@@ -249,11 +253,81 @@ export const promoServices = [
   })
 ];
 
+const normalizePromoCategory = (item = {}) => ({
+  ...item,
+  slug: String(item.slug || '').trim(),
+  name: String(item.name || '').trim(),
+  sceneLabel: String(item.sceneLabel || '').trim(),
+  positioning: String(item.positioning || '').trim(),
+  status: String(item.status || 'published'),
+  sort_order: Math.max(0, Number(item.sort_order || 0)),
+  hero: {
+    title: String(item?.hero?.title || '').trim(),
+    subtitle: String(item?.hero?.subtitle || '').trim()
+  },
+  highlights: Array.isArray(item.highlights) ? item.highlights.map((v) => String(v || '').trim()).filter(Boolean) : []
+});
+
+const normalizePromoService = (item = {}) => ({
+  ...item,
+  slug: String(item.slug || '').trim(),
+  categorySlug: String(item.categorySlug || '').trim(),
+  title: String(item.title || '').trim(),
+  subtitle: String(item.subtitle || '').trim(),
+  summary: String(item.summary || '').trim(),
+  status: String(item.status || 'published'),
+  sort_order: Math.max(0, Number(item.sort_order || 0)),
+  audience: Array.isArray(item.audience) ? item.audience.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  audienceTags: Array.isArray(item.audienceTags) ? item.audienceTags.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  process: Array.isArray(item.process) ? item.process.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  deliveryCycle: String(item.deliveryCycle || '').trim(),
+  regions: Array.isArray(item.regions) ? item.regions.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  priceRange: String(item.priceRange || '').trim(),
+  priceFactors: Array.isArray(item.priceFactors) ? item.priceFactors.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  capabilities: Array.isArray(item.capabilities) ? item.capabilities.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  certifications: Array.isArray(item.certifications) ? item.certifications.map((v) => String(v || '').trim()).filter(Boolean) : [],
+  faq: Array.isArray(item.faq)
+    ? item.faq
+      .map((qa) => ({ q: String(qa?.q || '').trim(), a: String(qa?.a || '').trim() }))
+      .filter((qa) => qa.q || qa.a)
+    : [],
+  contact: {
+    phone: String(item?.contact?.phone || '').trim(),
+    wechat: String(item?.contact?.wechat || '').trim(),
+    address: String(item?.contact?.address || '').trim()
+  },
+  coverImage: String(item.coverImage || '').trim(),
+  riskNotice: String(item.riskNotice || '').trim(),
+  complianceNotice: String(item.complianceNotice || '').trim()
+});
+
+const sortByPromoOrder = (a, b) => {
+  const bySort = Number(a?.sort_order || 0) - Number(b?.sort_order || 0);
+  if (bySort !== 0) return bySort;
+  return String(b?.updated_at || '').localeCompare(String(a?.updated_at || ''));
+};
+
+const runtimeCategories = resolveContentModule('promoCategories', fallbackPromoCategories).map((item) => normalizePromoCategory(item));
+const runtimeServices = resolveContentModule('promoServices', fallbackPromoServices).map((item) => normalizePromoService(item));
+
+const publishedCategoriesRaw = runtimeCategories
+  .filter((item) => item.status === 'published')
+  .sort(sortByPromoOrder);
+const publishedCategorySlugSet = new Set(publishedCategoriesRaw.map((item) => item.slug));
+
+export const promoServices = runtimeServices
+  .filter((item) => item.status === 'published' && publishedCategorySlugSet.has(item.categorySlug))
+  .sort(sortByPromoOrder);
+
+export const promoCategories = publishedCategoriesRaw;
+
 export const getPromoCategoryBySlug = (slug) =>
   promoCategories.find((item) => item.slug === slug);
 
 export const getPromoServicesByCategory = (categorySlug) =>
-  promoServices.filter((item) => item.categorySlug === categorySlug);
+  promoServices
+    .filter((item) => item.categorySlug === categorySlug)
+    .sort(sortByPromoOrder);
 
 export const getPromoServiceBySlug = (categorySlug, serviceSlug) =>
   promoServices.find((item) => item.categorySlug === categorySlug && item.slug === serviceSlug);

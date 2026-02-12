@@ -1,7 +1,8 @@
 import cover1 from '../images/cover_1.png';
 import cover2 from '../images/cover_2.png';
+import { resolveContentModule } from './runtimeContent';
 
-export const associationNotices = [
+const fallbackAssociationNotices = [
   {
     slug: 'reply-smart-health-service-project-2025-12-26',
     title: '关于同意筹备开展"基层卫生健康智慧服务项目"的复函',
@@ -123,6 +124,8 @@ export const associationNotices = [
     ]
   }
 ];
+
+export const associationNotices = resolveContentModule('associationNotices', fallbackAssociationNotices);
 
 export const getAssociationNoticeBySlug = (slug) =>
   associationNotices.find((item) => item.slug === slug);

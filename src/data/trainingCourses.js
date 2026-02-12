@@ -1,6 +1,7 @@
 import certificatePlaceholder from '../images/certificate-placeholder.svg';
+import { resolveContentModule } from './runtimeContent';
 
-const tracks = [
+const fallbackTracks = [
   {
     slug: 'maternal-early-education',
     name: '母婴照护与早教服务',
@@ -135,7 +136,7 @@ const buildCourse = ({
   certificateImageAlt: certificateImageAlt ?? `${name}证书示意图`
 });
 
-const courses = [
+const fallbackCourses = [
   buildCourse({
     slug: 'yuyingshi',
     name: '育婴师',
@@ -455,7 +456,7 @@ const courses = [
   })
 ];
 
-const featuredCourseSlugs = [
+const fallbackFeaturedCourseSlugs = [
   'yuyingshi',
   'zhongyi-chanhou-kangfushi',
   'zhongyi-kangfu-liliaoshi',
@@ -464,9 +465,104 @@ const featuredCourseSlugs = [
   'shengao-guanlishi'
 ];
 
-const courseMap = new Map(courses.map((course) => [course.slug, course]));
+const fallbackFeaturedCourseSlugSet = new Set(fallbackFeaturedCourseSlugs);
+const fallbackCoursesWithFeatured = fallbackCourses.map((course) => ({
+  ...course,
+  isFeatured: course.isFeatured ?? fallbackFeaturedCourseSlugSet.has(course.slug)
+}));
 
-export { tracks, courses, featuredCourseSlugs };
+const trainingHomeCategories = ['母婴', '中医', '健康', '其他'];
+
+const inferTrackHomeCategory = (track = {}) => {
+  const slug = String(track?.slug || '');
+  if (slug.includes('maternal') || slug.includes('women') || slug.includes('postpartum')) return '母婴';
+  if (slug.includes('tcm')) return '中医';
+  if (slug.includes('health')) return '健康';
+  return '其他';
+};
+
+const normalizeTrack = (track = {}) => ({
+  ...track,
+  slug: String(track.slug || '').trim(),
+  name: String(track.name || '').trim(),
+  positioning: String(track.positioning || '').trim(),
+  status: String(track.status || 'published'),
+  sort_order: Math.max(0, Number(track.sort_order || 0)),
+  hero: {
+    title: String(track?.hero?.title || '').trim(),
+    subtitle: String(track?.hero?.subtitle || '').trim()
+  },
+  audience: Array.isArray(track.audience) ? track.audience.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  jobRoles: Array.isArray(track.jobRoles) ? track.jobRoles.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  courseSlugs: Array.isArray(track.courseSlugs) ? track.courseSlugs.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  homeCategory: trainingHomeCategories.includes(track.homeCategory) ? track.homeCategory : inferTrackHomeCategory(track)
+});
+
+const normalizeCourse = (course = {}) => ({
+  ...course,
+  slug: String(course.slug || '').trim(),
+  name: String(course.name || '').trim(),
+  trackSlug: String(course.trackSlug || '').trim(),
+  summary: String(course.summary || '').trim(),
+  status: String(course.status || 'published'),
+  sort_order: Math.max(0, Number(course.sort_order || 0)),
+  isFeatured: Boolean(course.isFeatured),
+  audience: String(course.audience || '').trim(),
+  durationTag: String(course.durationTag || '').trim(),
+  hasPractical: Boolean(course.hasPractical),
+  hasCertificate: Boolean(course.hasCertificate),
+  hours: String(course.hours || '').trim(),
+  mode: String(course.mode || '').trim(),
+  certificate: String(course.certificate || '').trim(),
+  priceNote: String(course.priceNote || '').trim(),
+  introParagraphs: Array.isArray(course.introParagraphs) ? course.introParagraphs.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  examTarget: String(course.examTarget || '').trim(),
+  curriculumNote: String(course.curriculumNote || '').trim(),
+  registrationNotice: Array.isArray(course.registrationNotice) ? course.registrationNotice.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  employmentDirections: Array.isArray(course.employmentDirections) ? course.employmentDirections.map((item) => String(item || '').trim()).filter(Boolean) : [],
+  trainingTime: String(course.trainingTime || '').trim(),
+  trainingLocation: String(course.trainingLocation || '').trim(),
+  contactInfo: {
+    phone: String(course?.contactInfo?.phone || '').trim(),
+    address: String(course?.contactInfo?.address || '').trim()
+  },
+  certificateImage: String(course.certificateImage || '').trim(),
+  certificateImageAlt: String(course.certificateImageAlt || '').trim()
+});
+
+const sortByOrderAndUpdated = (a, b) => {
+  const bySort = Number(a?.sort_order || 0) - Number(b?.sort_order || 0);
+  if (bySort !== 0) return bySort;
+  return String(b?.updated_at || '').localeCompare(String(a?.updated_at || ''));
+};
+
+const runtimeTracks = resolveContentModule('trainingTracks', fallbackTracks).map((item) => normalizeTrack(item));
+const runtimeCourses = resolveContentModule('trainingCourses', fallbackCoursesWithFeatured).map((item) => normalizeCourse(item));
+
+const publishedCourses = runtimeCourses
+  .filter((course) => course.status === 'published')
+  .sort(sortByOrderAndUpdated);
+
+const publishedTracksRaw = runtimeTracks
+  .filter((track) => track.status === 'published')
+  .sort(sortByOrderAndUpdated);
+
+const publishedTrackSlugSet = new Set(publishedTracksRaw.map((track) => track.slug));
+
+export const courses = publishedCourses.filter((course) => publishedTrackSlugSet.has(course.trackSlug));
+
+export const tracks = publishedTracksRaw.map((track) => {
+  const linkedSlugs = courses
+    .filter((course) => course.trackSlug === track.slug)
+    .map((course) => course.slug);
+  return {
+    ...track,
+    courseSlugs: linkedSlugs
+  };
+});
+export const featuredCourseSlugs = fallbackFeaturedCourseSlugs;
+
+const courseMap = new Map(courses.map((course) => [course.slug, course]));
 
 export const getTrackBySlug = (trackSlug) => tracks.find((track) => track.slug === trackSlug);
 
@@ -474,5 +570,8 @@ export const getCourseBySlug = (courseSlug) => courses.find((course) => course.s
 
 export const getCoursesByTrackSlug = (trackSlug) => courses.filter((course) => course.trackSlug === trackSlug);
 
-export const getFeaturedCourses = () =>
-  featuredCourseSlugs.map((slug) => courseMap.get(slug)).filter(Boolean);
+export const getFeaturedCourses = () => {
+  const featuredByFlag = courses.filter((course) => course.isFeatured);
+  if (featuredByFlag.length > 0) return featuredByFlag;
+  return featuredCourseSlugs.map((slug) => courseMap.get(slug)).filter(Boolean);
+};

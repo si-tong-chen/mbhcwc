@@ -1,7 +1,8 @@
 import cover1 from '../images/cover_1.png';
 import cover2 from '../images/cover_2.png';
+import { resolveContentModule } from './runtimeContent';
 
-export const focusNews = [
+const fallbackFocusNews = [
   {
     slug: 'food-drug-safety-training-beijing-2025-01-13',
     title: '食品、药品安全及以食品、药品为载体涉诈涉传普法培训首期培训班在北京举办',
@@ -123,5 +124,7 @@ export const focusNews = [
     ]
   }
 ];
+
+export const focusNews = resolveContentModule('focusNews', fallbackFocusNews);
 
 export const getFocusNewsBySlug = (slug) => focusNews.find((item) => item.slug === slug);

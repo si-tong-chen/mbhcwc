@@ -3,16 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
+import { workstationGallery } from '../data/workstationGallery';
 
 const PAGE_SIZE = 9;
 
-const workstationPhotos = Array.from({ length: 27 }, (_, index) => ({
-  id: index + 1,
-  label: `工作站照片 ${index + 1}`
-}));
-
 const WorkstationGallery = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const workstationPhotos = workstationGallery;
   const totalPages = Math.max(1, Math.ceil(workstationPhotos.length / PAGE_SIZE));
   const requestedPage = Number(searchParams.get('page') || '1');
   const currentPage = Number.isNaN(requestedPage) ? 1 : Math.min(Math.max(1, requestedPage), totalPages);
@@ -36,13 +33,23 @@ const WorkstationGallery = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {currentPhotos.map((photo) => (
-                <article key={photo.id} className="rounded-2xl border border-[#E5C0C8]/60 bg-[#FFF9FB] p-4">
-                  <div className="aspect-[4/3] rounded-xl border-2 border-dashed border-[#EFB7BA] bg-white flex items-center justify-center text-[#C73A5C] text-sm md:text-base">
-                    {photo.label}
+              {currentPhotos.length ? currentPhotos.map((photo, index) => (
+                <article key={photo.id || photo.slug || `${photo.image}-${index}`} className="rounded-2xl border border-[#E5C0C8]/60 bg-[#FFF9FB] p-4">
+                  <div className="aspect-[4/3] rounded-xl border border-[#EFB7BA] bg-white overflow-hidden">
+                    {photo.image ? (
+                      <img src={photo.image} alt={photo.title || `工作站照片 ${startIndex + index + 1}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-[#C73A5C] text-sm md:text-base">
+                        暂无图片
+                      </div>
+                    )}
                   </div>
                 </article>
-              ))}
+              )) : (
+                <div className="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-[#E5C0C8] bg-[#FFF9FB] p-8 text-center text-[#6B7280]">
+                  暂无已发布工作站图片
+                </div>
+              )}
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-2">

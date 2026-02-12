@@ -4,8 +4,9 @@ import portraitAsian01 from '../images/portrait_asian_01.png';
 import portraitAsian02 from '../images/portrait_asian_02.jpg';
 import portraitElderly01 from '../images/portrait_elderly_01.jpg';
 import portraitAsian04 from '../images/portrait_asian_04.png';
+import { resolveContentModule } from './runtimeContent';
 
-export const healthLectures = [
+const fallbackHealthLectures = [
   {
     slug: 'cvd-prevention-2026-03-12',
     title: '张教授：心血管疾病预防与家庭风险管理',
@@ -101,5 +102,13 @@ export const healthLectures = [
     ]
   }
 ];
+
+const fallbackHealthLecturesUpcoming = fallbackHealthLectures.filter((item) => !item.videoUrl);
+const fallbackHealthLecturesReplay = fallbackHealthLectures.filter((item) => item.videoUrl);
+
+export const healthLecturesUpcoming = resolveContentModule('healthLecturesUpcoming', fallbackHealthLecturesUpcoming);
+export const healthLecturesReplay = resolveContentModule('healthLecturesReplay', fallbackHealthLecturesReplay);
+export const healthLectures = [...healthLecturesUpcoming, ...healthLecturesReplay]
+  .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
 
 export const getHealthLectureBySlug = (slug) => healthLectures.find((item) => item.slug === slug);
